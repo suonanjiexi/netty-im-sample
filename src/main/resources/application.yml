@@ -1,0 +1,73 @@
+spring:
+  application:
+    name: netty-im-sample
+  
+  # 数据库配置
+  datasource:
+    url: jdbc:mysql://localhost:3306/netty_im?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    
+  # Redis配置
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 0
+      timeout: 3000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+
+# MyBatis Plus配置
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: false
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+    banner: false
+  mapper-locations: classpath*:mapper/**/*.xml
+
+# JWT配置
+jwt:
+  secret: netty-im-secret-key-for-jwt-token-generation-2023
+  expiration: 86400000 # 24小时
+
+# SocketIO配置
+socketio:
+  host: localhost
+  port: 8081
+  maxFramePayloadLength: 1048576
+  maxHttpContentLength: 1048576
+  bossCount: 1
+  workCount: 100
+  allowCustomRequests: true
+  upgradeTimeout: 1000000
+  pingTimeout: 6000000
+  pingInterval: 25000
+  # 集群配置
+  cluster:
+    enabled: false  # 设置为true启用集群模式
+    nodeId: ${NODE_ID:node-1}  # 节点ID，可通过环境变量设置
+
+# 服务器配置
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+# 日志配置
+logging:
+  level:
+    com.example.nettyim: debug
+    org.springframework.security: debug
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
