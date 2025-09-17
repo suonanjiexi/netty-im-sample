@@ -7,18 +7,27 @@ USE netty_im;
 CREATE TABLE IF NOT EXISTS `users` (
     `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '用户ID',
     `username` VARCHAR(50) NOT NULL UNIQUE COMMENT '用户名',
-    `email` VARCHAR(100) NOT NULL UNIQUE COMMENT '邮箱',
+    `email` VARCHAR(100) DEFAULT NULL COMMENT '邮箱',
+    `phone` VARCHAR(20) NOT NULL UNIQUE COMMENT '手机号',
     `password` VARCHAR(255) NOT NULL COMMENT '密码（加密）',
     `nickname` VARCHAR(50) NOT NULL COMMENT '昵称',
     `avatar` VARCHAR(255) DEFAULT NULL COMMENT '头像URL',
     `status` TINYINT DEFAULT 1 COMMENT '状态：0-禁用，1-启用',
     `online_status` TINYINT DEFAULT 0 COMMENT '在线状态：0-离线，1-在线，2-忙碌，3-离开',
     `last_login_time` DATETIME DEFAULT NULL COMMENT '最后登录时间',
+    `id_card_number` VARCHAR(18) DEFAULT NULL COMMENT '身份证号码',
+    `real_name` VARCHAR(50) DEFAULT NULL COMMENT '真实姓名',
+    `identity_status` TINYINT DEFAULT 0 COMMENT '实名认证状态：0-未认证，1-已认证，2-认证失败',
+    `id_card_front_url` VARCHAR(255) DEFAULT NULL COMMENT '身份证正面照片URL',
+    `id_card_back_url` VARCHAR(255) DEFAULT NULL COMMENT '身份证反面照片URL',
+    `identity_verify_time` DATETIME DEFAULT NULL COMMENT '实名认证时间',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     INDEX `idx_username` (`username`),
     INDEX `idx_email` (`email`),
-    INDEX `idx_status` (`status`)
+    INDEX `idx_phone` (`phone`),
+    INDEX `idx_status` (`status`),
+    INDEX `idx_id_card_number` (`id_card_number`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
 
 -- 好友关系表
@@ -149,6 +158,185 @@ CREATE TABLE IF NOT EXISTS `user_sessions` (
     INDEX `idx_status` (`status`),
     FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户会话状态表';
+
+-- 朋友圈动态表
+CREATE TABLE IF NOT EXISTS `moments` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '动态ID',
+    `user_id` BIGINT NOT NULL COMMENT '发布用户ID',
+    `content` TEXT NOT NULL COMMENT '动态内容',
+    `images` JSON DEFAULT NULL COMMENT '图片URL列表（JSON格式）',
+    `location` VARCHAR(255) DEFAULT NULL COMMENT '位置信息',
+    `visibility` TINYINT DEFAULT 0 COMMENT '可见性：0-公开，1-仅好友，2-仅自己',
+    `like_count` INT DEFAULT 0 COMMENT '点赞数',
+    `comment_count` INT DEFAULT 0 COMMENT '评论数',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_created_at` (`created_at`),
+    INDEX `idx_visibility` (`visibility`),
+    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='朋友圈动态表';
+
+-- 朋友圈评论表
+CREATE TABLE IF NOT EXISTS `moment_comments` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '评论ID',
+    `moment_id` BIGINT NOT NULL COMMENT '动态ID',
+    `user_id` BIGINT NOT NULL COMMENT '评论用户ID',
+    `content` TEXT NOT NULL COMMENT '评论内容',
+    `reply_to_user_id` BIGINT DEFAULT NULL COMMENT '回复的用户ID',
+    `reply_to_comment_id` BIGINT DEFAULT NULL COMMENT '回复的评论ID',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX `idx_moment_id` (`moment_id`),
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_reply_to_user_id` (`reply_to_user_id`),
+    INDEX `idx_reply_to_comment_id` (`reply_to_comment_id`),
+    INDEX `idx_created_at` (`created_at`),
+    FOREIGN KEY (`moment_id`) REFERENCES `moments` (`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`reply_to_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+    FOREIGN KEY (`reply_to_comment_id`) REFERENCES `moment_comments` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='朋友圈评论表';
+
+-- 朋友圈点赞表
+CREATE TABLE IF NOT EXISTS `moment_likes` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '点赞ID',
+    `moment_id` BIGINT NOT NULL COMMENT '动态ID',
+    `user_id` BIGINT NOT NULL COMMENT '点赞用户ID',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    UNIQUE KEY `uk_moment_user` (`moment_id`, `user_id`),
+    INDEX `idx_moment_id` (`moment_id`),
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_created_at` (`created_at`),
+    FOREIGN KEY (`moment_id`) REFERENCES `moments` (`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='朋友圈点赞表';
+
+-- 贴吧表
+CREATE TABLE IF NOT EXISTS `forums` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '贴吧ID',
+    `name` VARCHAR(100) NOT NULL COMMENT '贴吧名称',
+    `description` TEXT DEFAULT NULL COMMENT '贴吧描述',
+    `avatar` VARCHAR(255) DEFAULT NULL COMMENT '贴吧头像URL',
+    `owner_id` BIGINT NOT NULL COMMENT '吧主ID',
+    `category` VARCHAR(50) DEFAULT NULL COMMENT '分类',
+    `member_count` INT DEFAULT 1 COMMENT '成员数',
+    `post_count` INT DEFAULT 0 COMMENT '帖子数',
+    `is_public` TINYINT DEFAULT 1 COMMENT '是否公开：0-私密，1-公开',
+    `status` TINYINT DEFAULT 1 COMMENT '状态：0-禁用，1-正常',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX `idx_name` (`name`),
+    INDEX `idx_owner_id` (`owner_id`),
+    INDEX `idx_category` (`category`),
+    INDEX `idx_is_public` (`is_public`),
+    INDEX `idx_status` (`status`),
+    INDEX `idx_created_at` (`created_at`),
+    FOREIGN KEY (`owner_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='贴吧表';
+
+-- 贴吧成员表
+CREATE TABLE IF NOT EXISTS `forum_members` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '成员ID',
+    `forum_id` BIGINT NOT NULL COMMENT '贴吧ID',
+    `user_id` BIGINT NOT NULL COMMENT '用户ID',
+    `role` TINYINT DEFAULT 0 COMMENT '角色：0-普通成员，1-管理员，2-吧主',
+    `join_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '加入时间',
+    `status` TINYINT DEFAULT 1 COMMENT '状态：0-禁言，1-正常',
+    UNIQUE KEY `uk_forum_user` (`forum_id`, `user_id`),
+    INDEX `idx_forum_id` (`forum_id`),
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_role` (`role`),
+    INDEX `idx_join_time` (`join_time`),
+    FOREIGN KEY (`forum_id`) REFERENCES `forums` (`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='贴吧成员表';
+
+-- 贴吧帖子表
+CREATE TABLE IF NOT EXISTS `forum_posts` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '帖子ID',
+    `forum_id` BIGINT NOT NULL COMMENT '贴吧ID',
+    `user_id` BIGINT NOT NULL COMMENT '发帖用户ID',
+    `title` VARCHAR(200) NOT NULL COMMENT '帖子标题',
+    `content` TEXT NOT NULL COMMENT '帖子内容',
+    `images` JSON DEFAULT NULL COMMENT '图片URL列表（JSON格式）',
+    `category` VARCHAR(50) DEFAULT NULL COMMENT '帖子分类',
+    `view_count` INT DEFAULT 0 COMMENT '浏览数',
+    `reply_count` INT DEFAULT 0 COMMENT '回复数',
+    `like_count` INT DEFAULT 0 COMMENT '点赞数',
+    `is_pinned` TINYINT DEFAULT 0 COMMENT '是否置顶：0-普通，1-置顶',
+    `is_essence` TINYINT DEFAULT 0 COMMENT '是否精华：0-普通，1-精华',
+    `status` TINYINT DEFAULT 1 COMMENT '状态：0-删除，1-正常',
+    `last_reply_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '最后回复时间',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX `idx_forum_id` (`forum_id`),
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_category` (`category`),
+    INDEX `idx_is_pinned` (`is_pinned`),
+    INDEX `idx_is_essence` (`is_essence`),
+    INDEX `idx_status` (`status`),
+    INDEX `idx_last_reply_time` (`last_reply_time`),
+    INDEX `idx_created_at` (`created_at`),
+    FULLTEXT KEY `ft_title_content` (`title`, `content`),
+    FOREIGN KEY (`forum_id`) REFERENCES `forums` (`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='贴吧帖子表';
+
+-- 贴吧回复表
+CREATE TABLE IF NOT EXISTS `forum_replies` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '回复ID',
+    `post_id` BIGINT NOT NULL COMMENT '帖子ID',
+    `user_id` BIGINT NOT NULL COMMENT '回复用户ID',
+    `content` TEXT NOT NULL COMMENT '回复内容',
+    `images` JSON DEFAULT NULL COMMENT '图片URL列表（JSON格式）',
+    `reply_to_user_id` BIGINT DEFAULT NULL COMMENT '回复的用户ID',
+    `reply_to_reply_id` BIGINT DEFAULT NULL COMMENT '回复的回复ID',
+    `floor_number` INT DEFAULT 0 COMMENT '楼层号',
+    `like_count` INT DEFAULT 0 COMMENT '点赞数',
+    `status` TINYINT DEFAULT 1 COMMENT '状态：0-删除，1-正常',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX `idx_post_id` (`post_id`),
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_reply_to_user_id` (`reply_to_user_id`),
+    INDEX `idx_reply_to_reply_id` (`reply_to_reply_id`),
+    INDEX `idx_floor_number` (`floor_number`),
+    INDEX `idx_status` (`status`),
+    INDEX `idx_created_at` (`created_at`),
+    FOREIGN KEY (`post_id`) REFERENCES `forum_posts` (`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`reply_to_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+    FOREIGN KEY (`reply_to_reply_id`) REFERENCES `forum_replies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='贴吧回复表';
+
+-- 贴吧帖子点赞表
+CREATE TABLE IF NOT EXISTS `forum_post_likes` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '点赞ID',
+    `post_id` BIGINT NOT NULL COMMENT '帖子ID',
+    `user_id` BIGINT NOT NULL COMMENT '点赞用户ID',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    UNIQUE KEY `uk_post_user` (`post_id`, `user_id`),
+    INDEX `idx_post_id` (`post_id`),
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_created_at` (`created_at`),
+    FOREIGN KEY (`post_id`) REFERENCES `forum_posts` (`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='贴吧帖子点赞表';
+
+-- 贴吧回复点赞表
+CREATE TABLE IF NOT EXISTS `forum_reply_likes` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '点赞ID',
+    `reply_id` BIGINT NOT NULL COMMENT '回复ID',
+    `user_id` BIGINT NOT NULL COMMENT '点赞用户ID',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    UNIQUE KEY `uk_reply_user` (`reply_id`, `user_id`),
+    INDEX `idx_reply_id` (`reply_id`),
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_created_at` (`created_at`),
+    FOREIGN KEY (`reply_id`) REFERENCES `forum_replies` (`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='贴吧回复点赞表';
 
 -- 插入测试数据
 INSERT INTO `users` (`username`, `email`, `password`, `nickname`, `status`) VALUES

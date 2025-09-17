@@ -1,5 +1,6 @@
 package com.example.nettyim.controller;
 
+import com.example.nettyim.dto.IdentityVerifyDTO;
 import com.example.nettyim.dto.Result;
 import com.example.nettyim.dto.UserLoginDTO;
 import com.example.nettyim.dto.UserRegisterDTO;
@@ -41,7 +42,7 @@ public class UserController {
     @PostMapping("/login")
     public Result<Map<String, Object>> login(@Valid @RequestBody UserLoginDTO loginDTO) {
         String token = userService.login(loginDTO);
-        User user = userService.getUserByUsername(loginDTO.getUsername());
+        User user = userService.getUserByAccount(loginDTO.getAccount());
         
         Map<String, Object> data = new HashMap<>();
         data.put("token", token);
@@ -64,9 +65,19 @@ public class UserController {
      */
     @PutMapping("/{userId}")
     public Result<User> updateUser(@PathVariable Long userId, 
-                                   @Valid @RequestBody UserUpdateDTO updateDTO) {
+                                  @Valid @RequestBody UserUpdateDTO updateDTO) {
         User user = userService.updateUser(userId, updateDTO);
         return Result.success("更新成功", user);
+    }
+    
+    /**
+     * 身份证实名认证
+     */
+    @PostMapping("/{userId}/identity-verify")
+    public Result<User> identityVerify(@PathVariable Long userId,
+                                      @Valid @RequestBody IdentityVerifyDTO verifyDTO) {
+        User user = userService.identityVerify(userId, verifyDTO);
+        return Result.success("实名认证成功", user);
     }
     
     /**
@@ -94,6 +105,15 @@ public class UserController {
     @GetMapping("/check/email")
     public Result<Boolean> checkEmail(@RequestParam String email) {
         boolean exists = userService.existsByEmail(email);
+        return Result.success(exists);
+    }
+    
+    /**
+     * 检查手机号是否存在
+     */
+    @GetMapping("/check/phone")
+    public Result<Boolean> checkPhone(@RequestParam String phone) {
+        boolean exists = userService.existsByPhone(phone);
         return Result.success(exists);
     }
 }

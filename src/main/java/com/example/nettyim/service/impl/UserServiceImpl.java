@@ -1,5 +1,6 @@
 package com.example.nettyim.service.impl;
 
+import com.example.nettyim.dto.IdentityVerifyDTO;
 import com.example.nettyim.dto.UserLoginDTO;
 import com.example.nettyim.dto.UserRegisterDTO;
 import com.example.nettyim.dto.UserUpdateDTO;
@@ -40,8 +41,14 @@ public class UserServiceImpl implements UserService {
             throw new BusinessException("用户名已存在");
         }
         
-        // 检查邮箱是否已存在
-        if (existsByEmail(registerDTO.getEmail())) {
+        // 检查手机号是否已存在
+        if (existsByPhone(registerDTO.getPhone())) {
+            throw new BusinessException("手机号已存在");
+        }
+        
+        // 检查邮箱是否已存在（如果提供了邮箱）
+        if (registerDTO.getEmail() != null && !registerDTO.getEmail().isEmpty() 
+            && existsByEmail(registerDTO.getEmail())) {
             throw new BusinessException("邮箱已存在");
         }
         
@@ -49,10 +56,12 @@ public class UserServiceImpl implements UserService {
         User user = new User();
         user.setUsername(registerDTO.getUsername());
         user.setEmail(registerDTO.getEmail());
+        user.setPhone(registerDTO.getPhone());
         user.setPassword(passwordEncoder.encode(registerDTO.getPassword()));
         user.setNickname(registerDTO.getNickname());
         user.setStatus(1); // 启用状态
         user.setOnlineStatus(0); // 离线状态
+        user.setIdentityStatus(0); // 未实名认证
         
         userMapper.insert(user);
         
@@ -63,19 +72,28 @@ public class UserServiceImpl implements UserService {
     
     @Override
     public String login(UserLoginDTO loginDTO) {
-        // 获取用户信息
-        User user = getUserByUsername(loginDTO.getUsername());
+        // 根据账号获取用户（支持用户名和手机号）
+        User user = getUserByAccount(loginDTO.getAccount());
+        
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
         
         // 验证密码
         if (!passwordEncoder.matches(loginDTO.getPassword(), user.getPassword())) {
-            throw new BusinessException("用户名或密码错误");
+            throw new BusinessException("密码错误");
+        }
+        
+        // 检查用户状态
+        if (user.getStatus() == 0) {
+            throw new BusinessException("用户已被禁用");
         }
         
         // 更新最后登录时间
         user.setLastLoginTime(LocalDateTime.now());
         userMapper.updateById(user);
         
-        // 生成JWT token
+        // 生成JWT Token
         return jwtUtils.generateToken(user.getUsername(), user.getId());
     }
     
@@ -151,5 +169,69 @@ public class UserServiceImpl implements UserService {
     public boolean existsByEmail(String email) {
         return userMapper.selectCount(new QueryWrapper<User>()
                 .eq("email", email)) > 0;
+    }
+    
+    @Override
+    public User getUserByPhone(String phone) {
+        User user = userMapper.selectOne(new QueryWrapper<User>()
+                .eq("phone", phone)
+                .eq("status", 1));
+        
+        if (user != null) {
+            user.setPassword(null);
+        }
+        return user;
+    }
+    
+    @Override
+    public User getUserByAccount(String account) {
+        User user = userMapper.selectOne(new QueryWrapper<User>()
+                .and(wrapper -> wrapper.eq("username", account).or().eq("phone", account))
+                .eq("status", 1));
+        
+        return user;
+    }
+    
+    @Override
+    public boolean existsByPhone(String phone) {
+        return userMapper.selectCount(new QueryWrapper<User>()
+                .eq("phone", phone)) > 0;
+    }
+    
+    @Override
+    public User identityVerify(Long userId, IdentityVerifyDTO verifyDTO) {
+        User user = userMapper.selectById(userId);
+        
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
+        
+        // 检查是否已经实名认证
+        if (user.getIdentityStatus() == 1) {
+            throw new BusinessException("用户已经实名认证");
+        }
+        
+        // 检查身份证号码是否已被使用
+        User existingUser = userMapper.selectOne(new QueryWrapper<User>()
+                .eq("id_card_number", verifyDTO.getIdCardNumber())
+                .ne("id", userId));
+        
+        if (existingUser != null) {
+            throw new BusinessException("该身份证号码已被使用");
+        }
+        
+        // 更新用户实名认证信息
+        user.setRealName(verifyDTO.getRealName());
+        user.setIdCardNumber(verifyDTO.getIdCardNumber());
+        user.setIdCardFrontUrl(verifyDTO.getIdCardFrontUrl());
+        user.setIdCardBackUrl(verifyDTO.getIdCardBackUrl());
+        user.setIdentityStatus(1); // 设置为已认证
+        user.setIdentityVerifyTime(LocalDateTime.now());
+        
+        userMapper.updateById(user);
+        
+        // 清除密码字段返回
+        user.setPassword(null);
+        return user;
     }
 }

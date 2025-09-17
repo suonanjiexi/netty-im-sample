@@ -33,6 +33,11 @@ public class User extends BaseEntity {
     private String email;
     
     /**
+     * 手机号
+     */
+    private String phone;
+    
+    /**
      * 密码（加密）
      */
     private String password;
@@ -61,6 +66,36 @@ public class User extends BaseEntity {
      * 最后登录时间
      */
     private LocalDateTime lastLoginTime;
+    
+    /**
+     * 身份证号码
+     */
+    private String idCardNumber;
+    
+    /**
+     * 真实姓名
+     */
+    private String realName;
+    
+    /**
+     * 实名认证状态：0-未认证，1-已认证，2-认证失败
+     */
+    private Integer identityStatus;
+    
+    /**
+     * 身份证正面照片URL
+     */
+    private String idCardFrontUrl;
+    
+    /**
+     * 身份证反面照片URL
+     */
+    private String idCardBackUrl;
+    
+    /**
+     * 实名认证时间
+     */
+    private LocalDateTime identityVerifyTime;
     
     // Getter and Setter methods
     public Long getId() {
@@ -133,5 +168,61 @@ public class User extends BaseEntity {
     
     public void setLastLoginTime(LocalDateTime lastLoginTime) {
         this.lastLoginTime = lastLoginTime;
+    }
+    
+    public String getPhone() {
+        return phone;
+    }
+    
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+    
+    public String getIdCardNumber() {
+        return idCardNumber;
+    }
+    
+    public void setIdCardNumber(String idCardNumber) {
+        this.idCardNumber = idCardNumber;
+    }
+    
+    public String getRealName() {
+        return realName;
+    }
+    
+    public void setRealName(String realName) {
+        this.realName = realName;
+    }
+    
+    public Integer getIdentityStatus() {
+        return identityStatus;
+    }
+    
+    public void setIdentityStatus(Integer identityStatus) {
+        this.identityStatus = identityStatus;
+    }
+    
+    public String getIdCardFrontUrl() {
+        return idCardFrontUrl;
+    }
+    
+    public void setIdCardFrontUrl(String idCardFrontUrl) {
+        this.idCardFrontUrl = idCardFrontUrl;
+    }
+    
+    public String getIdCardBackUrl() {
+        return idCardBackUrl;
+    }
+    
+    public void setIdCardBackUrl(String idCardBackUrl) {
+        this.idCardBackUrl = idCardBackUrl;
+    }
+    
+    public LocalDateTime getIdentityVerifyTime() {
+        return identityVerifyTime;
+    }
+    
+    public void setIdentityVerifyTime(LocalDateTime identityVerifyTime) {
+        this.identityVerifyTime = identityVerifyTime;
     }
 }

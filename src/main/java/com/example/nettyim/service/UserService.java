@@ -1,5 +1,6 @@
 package com.example.nettyim.service;
 
+import com.example.nettyim.dto.IdentityVerifyDTO;
 import com.example.nettyim.dto.UserLoginDTO;
 import com.example.nettyim.dto.UserRegisterDTO;
 import com.example.nettyim.dto.UserUpdateDTO;
@@ -26,6 +27,16 @@ public interface UserService {
     User getUserByUsername(String username);
     
     /**
+     * 根据手机号获取用户
+     */
+    User getUserByPhone(String phone);
+    
+    /**
+     * 根据账号获取用户（支持用户名和手机号）
+     */
+    User getUserByAccount(String account);
+    
+    /**
      * 根据用户ID获取用户
      */
     User getUserById(Long userId);
@@ -49,4 +60,14 @@ public interface UserService {
      * 检查邮箱是否存在
      */
     boolean existsByEmail(String email);
+    
+    /**
+     * 检查手机号是否存在
+     */
+    boolean existsByPhone(String phone);
+    
+    /**
+     * 身份证实名认证
+     */
+    User identityVerify(Long userId, IdentityVerifyDTO verifyDTO);
 }
