@@ -80,6 +80,11 @@ public class Message extends BaseEntity {
      */
     private Integer isDeleted;
     
+    /**
+     * 审核状态：0-待审核，1-审核通过，2-审核拒绝，3-自动通过，4-自动拒绝
+     */
+    private Integer auditStatus;
+    
     // Getter and Setter methods
     public Long getId() {
         return id;
@@ -183,5 +188,13 @@ public class Message extends BaseEntity {
     
     public void setIsDeleted(Integer isDeleted) {
         this.isDeleted = isDeleted;
+    }
+    
+    public Integer getAuditStatus() {
+        return auditStatus;
+    }
+    
+    public void setAuditStatus(Integer auditStatus) {
+        this.auditStatus = auditStatus;
     }
 }

@@ -2,12 +2,17 @@ package com.example.nettyim.service.impl;
 
 import com.example.nettyim.dto.MessageQueryDTO;
 import com.example.nettyim.dto.SendMessageDTO;
+import com.example.nettyim.entity.ContentAudit;
 import com.example.nettyim.entity.Message;
+import com.example.nettyim.entity.enums.AuditStatus;
+import com.example.nettyim.entity.enums.ContentType;
 import com.example.nettyim.exception.BusinessException;
 import com.example.nettyim.mapper.MessageMapper;
+import com.example.nettyim.service.ContentAuditService;
 import com.example.nettyim.service.MessageService;
 import com.example.nettyim.service.FriendshipService;
 import com.example.nettyim.service.GroupService;
+import com.example.nettyim.service.SensitiveWordService;
 import com.example.nettyim.websocket.SocketIOServerManager;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -30,13 +35,18 @@ public class MessageServiceImpl implements MessageService {
     private final FriendshipService friendshipService;
     private final GroupService groupService;
     private final SocketIOServerManager socketIOServerManager;
+    private final ContentAuditService contentAuditService;
+    private final SensitiveWordService sensitiveWordService;
     
     public MessageServiceImpl(MessageMapper messageMapper, FriendshipService friendshipService, 
-                             GroupService groupService, SocketIOServerManager socketIOServerManager) {
+                             GroupService groupService, SocketIOServerManager socketIOServerManager,
+                             ContentAuditService contentAuditService, SensitiveWordService sensitiveWordService) {
         this.messageMapper = messageMapper;
         this.friendshipService = friendshipService;
         this.groupService = groupService;
         this.socketIOServerManager = socketIOServerManager;
+        this.contentAuditService = contentAuditService;
+        this.sensitiveWordService = sensitiveWordService;
     }
     
     @Override
@@ -84,7 +94,35 @@ public class MessageServiceImpl implements MessageService {
         message.setIsRead(0);
         message.setIsDeleted(0);
         
+        // 内容审核
+        if (sendMessageDTO.getMessageType() == 1) { // 文本消息需要审核
+            ContentAudit auditResult = contentAuditService.autoAuditContent(
+                ContentType.MESSAGE, null, fromUserId, sendMessageDTO.getContent());
+            
+            if (auditResult != null) {
+                message.setAuditStatus(auditResult.getAuditStatus());
+                // 如果审核被拒绝，过滤敏感词后再发送
+                if (AuditStatus.AUTO_REJECTED.getCode().equals(auditResult.getAuditStatus())) {
+                    String filteredContent = sensitiveWordService.filterSensitiveWords(sendMessageDTO.getContent());
+                    message.setContent(filteredContent);
+                    message.setAuditStatus(AuditStatus.AUTO_APPROVED.getCode());
+                }
+            } else {
+                message.setAuditStatus(AuditStatus.AUTO_APPROVED.getCode());
+            }
+        } else {
+            message.setAuditStatus(AuditStatus.AUTO_APPROVED.getCode()); // 非文本消息暂时自动通过
+        }
+        
         messageMapper.insert(message);
+        
+        // 更新审核记录的内容ID
+        if (sendMessageDTO.getMessageType() == 1) {
+            ContentAudit audit = contentAuditService.getContentAuditRecord(ContentType.MESSAGE, message.getId());
+            if (audit == null) {
+                contentAuditService.autoAuditContent(ContentType.MESSAGE, message.getId(), fromUserId, sendMessageDTO.getContent());
+            }
+        }
         
         // 实时推送消息
         if (sendMessageDTO.getToUserId() != null) {

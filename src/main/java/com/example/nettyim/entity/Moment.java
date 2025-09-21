@@ -57,6 +57,11 @@ public class Moment extends BaseEntity {
      */
     private Integer commentCount;
     
+    /**
+     * 审核状态：0-待审核，1-审核通过，2-审核拒绝，3-自动通过，4-自动拒绝
+     */
+    private Integer auditStatus;
+    
     // Getter and Setter methods
     public Long getId() {
         return id;
@@ -120,5 +125,13 @@ public class Moment extends BaseEntity {
     
     public void setCommentCount(Integer commentCount) {
         this.commentCount = commentCount;
+    }
+    
+    public Integer getAuditStatus() {
+        return auditStatus;
+    }
+    
+    public void setAuditStatus(Integer auditStatus) {
+        this.auditStatus = auditStatus;
     }
 }
