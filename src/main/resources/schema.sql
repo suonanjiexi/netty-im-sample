@@ -52,6 +52,178 @@ CREATE TABLE IF NOT EXISTS `groups` (
     `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '群组ID',
     `name` VARCHAR(100) NOT NULL COMMENT '群组名称',
     `description` TEXT DEFAULT NULL COMMENT '群组描述',
+    `creator_id` BIGINT NOT NULL COMMENT '创建者ID',
+    `type` TINYINT DEFAULT 0 COMMENT '群组类型：0-普通群，1-超级群',
+    `status` TINYINT DEFAULT 1 COMMENT '状态：0-禁用，1-启用',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX `idx_name` (`name`),
+    INDEX `idx_creator_id` (`creator_id`),
+    INDEX `idx_type` (`type`),
+    INDEX `idx_status` (`status`),
+    FOREIGN KEY (`creator_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='群组表';
+
+-- 群组成员表
+CREATE TABLE IF NOT EXISTS `group_members` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '成员ID',
+    `group_id` BIGINT NOT NULL COMMENT '群组ID',
+    `user_id` BIGINT NOT NULL COMMENT '用户ID',
+    `role` TINYINT DEFAULT 0 COMMENT '角色：0-普通成员，1-管理员，2-群主',
+    `status` TINYINT DEFAULT 1 COMMENT '状态：0-禁用，1-启用',
+    `join_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '加入时间',
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    UNIQUE KEY `uk_group_user` (`group_id`, `user_id`),
+    INDEX `idx_group_id` (`group_id`),
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_role` (`role`),
+    INDEX `idx_status` (`status`),
+    FOREIGN KEY (`group_id`) REFERENCES `groups` (`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='群组成员表';
+
+-- 消息表
+CREATE TABLE IF NOT EXISTS `messages` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '消息ID',
+    `sender_id` BIGINT NOT NULL COMMENT '发送者ID',
+    `receiver_id` BIGINT NOT NULL COMMENT '接收者ID',
+    `content` TEXT NOT NULL COMMENT '消息内容',
+    `type` TINYINT DEFAULT 0 COMMENT '消息类型：0-文本，1-图片，2-语音，3-视频，4-文件',
+    `status` TINYINT DEFAULT 0 COMMENT '消息状态：0-未读，1-已读',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    INDEX `idx_sender_id` (`sender_id`),
+    INDEX `idx_receiver_id` (`receiver_id`),
+    INDEX `idx_type` (`type`),
+    INDEX `idx_status` (`status`),
+    FOREIGN KEY (`sender_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`receiver_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='消息表';
+
+-- 社交成就表
+CREATE TABLE IF NOT EXISTS `social_achievements` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '成就ID',
+    `name` VARCHAR(100) NOT NULL COMMENT '成就名称',
+    `description` TEXT DEFAULT NULL COMMENT '成就描述',
+    `target_value` INT NOT NULL COMMENT '目标值',
+    `is_active` TINYINT DEFAULT 1 COMMENT '是否激活：0-未激活，1-已激活',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX `idx_name` (`name`),
+    INDEX `idx_is_active` (`is_active`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='社交成就表';
+
+-- 用户成就表
+CREATE TABLE IF NOT EXISTS `user_achievements` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '用户成就ID',
+    `user_id` BIGINT NOT NULL COMMENT '用户ID',
+    `achievement_id` BIGINT NOT NULL COMMENT '成就ID',
+    `current_value` INT NOT NULL COMMENT '当前值',
+    `target_value` INT NOT NULL COMMENT '目标值',
+    `is_completed` TINYINT DEFAULT 0 COMMENT '是否完成：0-未完成，1-已完成',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    UNIQUE KEY `uk_user_achievement` (`user_id`, `achievement_id`),
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_achievement_id` (`achievement_id`),
+    INDEX `idx_is_completed` (`is_completed`),
+    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`achievement_id`) REFERENCES `social_achievements` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户成就表';
+
+-- 插入默认社交成就
+INSERT INTO `social_achievements` (`name`, `description`, `target_value`, `is_active`) VALUES
+('First Message', 'Send your first message', 1, 1),
+('Ten Messages', 'Send 10 messages', 10, 1),
+('Fifty Messages', 'Send 50 messages', 50, 1),
+('Hundred Messages', 'Send 100 messages', 100, 1),
+('First Friend', 'Add your first friend', 1, 1),
+('Ten Friends', 'Add 10 friends', 10, 1),
+('Fifty Friends', 'Add 50 friends', 50, 1),
+('Hundred Friends', 'Add 100 friends', 100, 1),
+('First Group', 'Create your first group', 1, 1),
+('Ten Groups', 'Create 10 groups', 10, 1),
+('Fifty Groups', 'Create 50 groups', 50, 1),
+('Hundred Groups', 'Create 100 groups', 100, 1);
+
+-- 插入默认用户成就
+INSERT INTO `user_achievements` (`user_id`, `achievement_id`, `current_value`, `target_value`, `is_completed`) 
+SELECT u.id, sa.id, 0, sa.target_value, 0 
+FROM `users` u 
+CROSS JOIN `social_achievements` sa 
+WHERE sa.is_active = 1 
+AND NOT EXISTS (SELECT 1 FROM `user_achievements` ua WHERE ua.user_id = u.id AND ua.achievement_id = sa.id);
+
+-- 运营管理后台管理员表
+CREATE TABLE IF NOT EXISTS `admin_users` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '管理员ID',
+    `username` VARCHAR(50) NOT NULL UNIQUE COMMENT '用户名',
+    `password` VARCHAR(255) NOT NULL COMMENT '密码（加密）',
+    `nickname` VARCHAR(50) NOT NULL COMMENT '昵称',
+    `avatar` VARCHAR(255) DEFAULT NULL COMMENT '头像URL',
+    `email` VARCHAR(100) DEFAULT NULL COMMENT '邮箱',
+    `phone` VARCHAR(20) DEFAULT NULL COMMENT '手机号',
+    `role` VARCHAR(50) NOT NULL DEFAULT 'ADMIN' COMMENT '角色：ADMIN-超级管理员，OPERATOR-普通运营',
+    `status` TINYINT DEFAULT 1 COMMENT '状态：0-禁用，1-启用',
+    `last_login_time` DATETIME DEFAULT NULL COMMENT '最后登录时间',
+    `last_login_ip` VARCHAR(45) DEFAULT NULL COMMENT '最后登录IP',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX `idx_username` (`username`),
+    INDEX `idx_status` (`status`),
+    INDEX `idx_role` (`role`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='运营管理后台管理员表';
+
+-- 管理员操作日志表
+CREATE TABLE IF NOT EXISTS `admin_operation_logs` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '日志ID',
+    `admin_user_id` BIGINT NOT NULL COMMENT '管理员ID',
+    `admin_username` VARCHAR(50) NOT NULL COMMENT '管理员用户名',
+    `operation` VARCHAR(100) NOT NULL COMMENT '操作类型',
+    `module` VARCHAR(50) NOT NULL COMMENT '操作模块',
+    `description` TEXT DEFAULT NULL COMMENT '操作描述',
+    `request_method` VARCHAR(10) DEFAULT NULL COMMENT '请求方法',
+    `request_url` VARCHAR(255) DEFAULT NULL COMMENT '请求URL',
+    `request_params` JSON DEFAULT NULL COMMENT '请求参数',
+    `response_result` JSON DEFAULT NULL COMMENT '响应结果',
+    `ip_address` VARCHAR(45) DEFAULT NULL COMMENT 'IP地址',
+    `user_agent` TEXT DEFAULT NULL COMMENT '用户代理',
+    `execution_time` INT DEFAULT NULL COMMENT '执行时间（毫秒）',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    INDEX `idx_admin_user_id` (`admin_user_id`),
+    INDEX `idx_operation` (`operation`),
+    INDEX `idx_module` (`module`),
+    INDEX `idx_created_at` (`created_at`),
+    FOREIGN KEY (`admin_user_id`) REFERENCES `admin_users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='管理员操作日志表';
+
+-- 数据统计表
+CREATE TABLE IF NOT EXISTS `data_statistics` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '统计ID',
+    `stat_type` VARCHAR(50) NOT NULL COMMENT '统计类型：user-用户统计, content-内容统计, payment-支付统计, membership-会员统计',
+    `stat_date` DATETIME NOT NULL COMMENT '统计日期',
+    `new_users` INT DEFAULT 0 COMMENT '新增用户数',
+    `active_users` INT DEFAULT 0 COMMENT '活跃用户数',
+    `total_users` INT DEFAULT 0 COMMENT '总用户数',
+    `new_contents` INT DEFAULT 0 COMMENT '新增内容数',
+    `total_contents` INT DEFAULT 0 COMMENT '总内容数',
+    `new_orders` INT DEFAULT 0 COMMENT '新增订单数',
+    `total_orders` INT DEFAULT 0 COMMENT '总订单数',
+    `order_amount` DECIMAL(15,2) DEFAULT 0.00 COMMENT '订单总金额',
+    `new_members` INT DEFAULT 0 COMMENT '新增会员数',
+    `total_members` INT DEFAULT 0 COMMENT '总会员数',
+    `remark` TEXT DEFAULT NULL COMMENT '备注',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX `idx_stat_type` (`stat_type`),
+    INDEX `idx_stat_date` (`stat_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='数据统计表';
+
+-- 插入默认管理员账户
+INSERT INTO `admin_users` (`username`, `password`, `nickname`, `role`, `status`) VALUES
+('admin', '$2a$10$k9x8gNKvPEEwwsGhKCfNVOwP5WRE.QZuuNBXYkOHb1lHk8OV8qL3G', '超级管理员', 'ADMIN', 1);
+
+    `name` VARCHAR(100) NOT NULL COMMENT '群组名称',
+    `description` TEXT DEFAULT NULL COMMENT '群组描述',
     `avatar` VARCHAR(255) DEFAULT NULL COMMENT '群组头像',
     `owner_id` BIGINT NOT NULL COMMENT '群主ID',
     `max_members` INT DEFAULT 500 COMMENT '最大成员数',
@@ -768,3 +940,368 @@ INSERT INTO `user_wallets` (`user_id`, `balance`, `frozen_amount`, `total_rechar
 SELECT u.id, 0.00, 0.00, 0.00, 0.00, 0 
 FROM `users` u 
 WHERE NOT EXISTS (SELECT 1 FROM `user_wallets` uw WHERE uw.user_id = u.id);
+
+-- 用户推荐系统表
+CREATE TABLE IF NOT EXISTS `user_recommendations` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '推荐ID',
+    `user_id` BIGINT NOT NULL COMMENT '被推荐用户ID',
+    `recommended_user_id` BIGINT NOT NULL COMMENT '推荐的用户ID',
+    `recommendation_type` TINYINT NOT NULL COMMENT '推荐类型：1-通讯录，2-位置，3-兴趣，4-共同好友，5-群组',
+    `score` DECIMAL(5,2) DEFAULT 0.00 COMMENT '推荐分数',
+    `reason` VARCHAR(255) DEFAULT NULL COMMENT '推荐原因',
+    `status` TINYINT DEFAULT 0 COMMENT '状态：0-待处理，1-已接受，2-已拒绝，3-已忽略',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_recommended_user_id` (`recommended_user_id`),
+    INDEX `idx_recommendation_type` (`recommendation_type`),
+    INDEX `idx_score` (`score`),
+    INDEX `idx_status` (`status`),
+    INDEX `idx_created_at` (`created_at`),
+    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`recommended_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户推荐表';
+
+-- 用户兴趣标签表
+CREATE TABLE IF NOT EXISTS `user_interests` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '兴趣ID',
+    `user_id` BIGINT NOT NULL COMMENT '用户ID',
+    `interest_category` VARCHAR(50) NOT NULL COMMENT '兴趣分类',
+    `interest_tag` VARCHAR(100) NOT NULL COMMENT '兴趣标签',
+    `weight` DECIMAL(3,2) DEFAULT 1.00 COMMENT '权重',
+    `source` VARCHAR(50) DEFAULT 'USER' COMMENT '来源：USER-用户设置，SYSTEM-系统推断',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    UNIQUE KEY `uk_user_interest` (`user_id`, `interest_category`, `interest_tag`),
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_interest_category` (`interest_category`),
+    INDEX `idx_interest_tag` (`interest_tag`),
+    INDEX `idx_weight` (`weight`),
+    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户兴趣标签表';
+
+-- 用户位置信息表
+CREATE TABLE IF NOT EXISTS `user_locations` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '位置ID',
+    `user_id` BIGINT NOT NULL COMMENT '用户ID',
+    `latitude` DECIMAL(10,6) NOT NULL COMMENT '纬度',
+    `longitude` DECIMAL(10,6) NOT NULL COMMENT '经度',
+    `address` VARCHAR(255) DEFAULT NULL COMMENT '地址',
+    `city` VARCHAR(100) DEFAULT NULL COMMENT '城市',
+    `province` VARCHAR(100) DEFAULT NULL COMMENT '省份',
+    `country` VARCHAR(100) DEFAULT NULL COMMENT '国家',
+    `is_current` TINYINT DEFAULT 1 COMMENT '是否当前位置',
+    `privacy_level` TINYINT DEFAULT 1 COMMENT '隐私级别：0-不显示，1-好友可见，2-公开',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_location` (`latitude`, `longitude`),
+    INDEX `idx_city` (`city`),
+    INDEX `idx_is_current` (`is_current`),
+    INDEX `idx_privacy_level` (`privacy_level`),
+    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户位置信息表';
+
+-- 内容推荐表
+CREATE TABLE IF NOT EXISTS `content_recommendations` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '推荐ID',
+    `user_id` BIGINT NOT NULL COMMENT '用户ID',
+    `content_type` TINYINT NOT NULL COMMENT '内容类型：1-朋友圈，2-贴吧帖子，3-群组，4-用户',
+    `content_id` BIGINT NOT NULL COMMENT '内容ID',
+    `score` DECIMAL(5,2) DEFAULT 0.00 COMMENT '推荐分数',
+    `algorithm` VARCHAR(50) DEFAULT NULL COMMENT '推荐算法',
+    `reason` VARCHAR(255) DEFAULT NULL COMMENT '推荐原因',
+    `is_shown` TINYINT DEFAULT 0 COMMENT '是否已展示',
+    `is_clicked` TINYINT DEFAULT 0 COMMENT '是否已点击',
+    `shown_at` DATETIME DEFAULT NULL COMMENT '展示时间',
+    `clicked_at` DATETIME DEFAULT NULL COMMENT '点击时间',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_content_type` (`content_type`),
+    INDEX `idx_content_id` (`content_id`),
+    INDEX `idx_score` (`score`),
+    INDEX `idx_is_shown` (`is_shown`),
+    INDEX `idx_created_at` (`created_at`),
+    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='内容推荐表';
+
+-- 用户签到记录表
+CREATE TABLE IF NOT EXISTS `user_check_ins` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '签到ID',
+    `user_id` BIGINT NOT NULL COMMENT '用户ID',
+    `check_in_date` DATE NOT NULL COMMENT '签到日期',
+    `continuous_days` INT DEFAULT 1 COMMENT '连续签到天数',
+    `points_earned` INT DEFAULT 0 COMMENT '获得积分',
+    `bonus_type` VARCHAR(50) DEFAULT NULL COMMENT '奖励类型',
+    `bonus_amount` DECIMAL(10,2) DEFAULT 0.00 COMMENT '奖励金额',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    UNIQUE KEY `uk_user_date` (`user_id`, `check_in_date`),
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_check_in_date` (`check_in_date`),
+    INDEX `idx_continuous_days` (`continuous_days`),
+    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户签到记录表';
+
+-- 社交成就表
+CREATE TABLE IF NOT EXISTS `social_achievements` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '成就ID',
+    `achievement_code` VARCHAR(50) NOT NULL UNIQUE COMMENT '成就代码',
+    `achievement_name` VARCHAR(100) NOT NULL COMMENT '成就名称',
+    `achievement_description` TEXT DEFAULT NULL COMMENT '成就描述',
+    `achievement_icon` VARCHAR(255) DEFAULT NULL COMMENT '成就图标',
+    `category` VARCHAR(50) NOT NULL COMMENT '成就分类',
+    `type` TINYINT NOT NULL COMMENT '成就类型：1-一次性，2-进阶型，3-日常型',
+    `target_value` INT DEFAULT NULL COMMENT '目标值',
+    `points_reward` INT DEFAULT 0 COMMENT '积分奖励',
+    `exp_reward` INT DEFAULT 0 COMMENT '经验奖励',
+    `badge_reward` VARCHAR(255) DEFAULT NULL COMMENT '徽章奖励',
+    `is_active` TINYINT DEFAULT 1 COMMENT '是否激活',
+    `sort_order` INT DEFAULT 0 COMMENT '排序',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX `idx_achievement_code` (`achievement_code`),
+    INDEX `idx_category` (`category`),
+    INDEX `idx_type` (`type`),
+    INDEX `idx_is_active` (`is_active`),
+    INDEX `idx_sort_order` (`sort_order`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='社交成就表';
+
+-- 用户成就记录表
+CREATE TABLE IF NOT EXISTS `user_achievements` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '用户成就ID',
+    `user_id` BIGINT NOT NULL COMMENT '用户ID',
+    `achievement_id` BIGINT NOT NULL COMMENT '成就ID',
+    `current_value` INT DEFAULT 0 COMMENT '当前进度值',
+    `target_value` INT NOT NULL COMMENT '目标值',
+    `is_completed` TINYINT DEFAULT 0 COMMENT '是否完成',
+    `completed_at` DATETIME DEFAULT NULL COMMENT '完成时间',
+    `level` INT DEFAULT 1 COMMENT '成就等级（进阶型成就）',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    UNIQUE KEY `uk_user_achievement` (`user_id`, `achievement_id`),
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_achievement_id` (`achievement_id`),
+    INDEX `idx_is_completed` (`is_completed`),
+    INDEX `idx_completed_at` (`completed_at`),
+    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`achievement_id`) REFERENCES `social_achievements` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户成就记录表';
+
+-- 用户等级经验表
+CREATE TABLE IF NOT EXISTS `user_levels` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '等级ID',
+    `level` INT NOT NULL UNIQUE COMMENT '等级',
+    `level_name` VARCHAR(50) NOT NULL COMMENT '等级名称',
+    `min_exp` INT NOT NULL COMMENT '最小经验值',
+    `max_exp` INT DEFAULT NULL COMMENT '最大经验值',
+    `icon_url` VARCHAR(255) DEFAULT NULL COMMENT '等级图标',
+    `privileges` JSON DEFAULT NULL COMMENT '等级特权（JSON格式）',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX `idx_level` (`level`),
+    INDEX `idx_min_exp` (`min_exp`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户等级表';
+
+-- 用户经验记录表
+CREATE TABLE IF NOT EXISTS `user_experience` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '经验ID',
+    `user_id` BIGINT NOT NULL COMMENT '用户ID',
+    `current_level` INT DEFAULT 1 COMMENT '当前等级',
+    `current_exp` INT DEFAULT 0 COMMENT '当前经验值',
+    `total_exp` INT DEFAULT 0 COMMENT '累计经验值',
+    `last_level_up_time` DATETIME DEFAULT NULL COMMENT '上次升级时间',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    UNIQUE KEY `uk_user_id` (`user_id`),
+    INDEX `idx_current_level` (`current_level`),
+    INDEX `idx_current_exp` (`current_exp`),
+    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户经验记录表';
+
+-- 经验获得记录表
+CREATE TABLE IF NOT EXISTS `experience_logs` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '经验日志ID',
+    `user_id` BIGINT NOT NULL COMMENT '用户ID',
+    `action_type` VARCHAR(50) NOT NULL COMMENT '行为类型',
+    `exp_gained` INT NOT NULL COMMENT '获得经验',
+    `description` VARCHAR(255) DEFAULT NULL COMMENT '描述',
+    `related_id` BIGINT DEFAULT NULL COMMENT '关联ID',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_action_type` (`action_type`),
+    INDEX `idx_created_at` (`created_at`),
+    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='经验获得记录表';
+
+-- 消息加密记录表
+CREATE TABLE IF NOT EXISTS `message_encryption` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '加密ID',
+    `message_id` VARCHAR(64) NOT NULL COMMENT '消息ID',
+    `encryption_key_id` VARCHAR(64) NOT NULL COMMENT '加密密钥ID',
+    `algorithm` VARCHAR(20) DEFAULT 'AES-256' COMMENT '加密算法',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    UNIQUE KEY `uk_message_id` (`message_id`),
+    INDEX `idx_encryption_key_id` (`encryption_key_id`),
+    INDEX `idx_created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='消息加密记录表';
+
+-- 用户密钥表
+CREATE TABLE IF NOT EXISTS `user_keys` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '密钥ID',
+    `user_id` BIGINT NOT NULL COMMENT '用户ID',
+    `key_id` VARCHAR(64) NOT NULL UNIQUE COMMENT '密钥标识',
+    `public_key` TEXT NOT NULL COMMENT '公钥',
+    `private_key_encrypted` TEXT NOT NULL COMMENT '加密私钥',
+    `key_type` VARCHAR(20) DEFAULT 'RSA-2048' COMMENT '密钥类型',
+    `is_active` TINYINT DEFAULT 1 COMMENT '是否激活',
+    `expires_at` DATETIME DEFAULT NULL COMMENT '过期时间',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_key_id` (`key_id`),
+    INDEX `idx_is_active` (`is_active`),
+    INDEX `idx_expires_at` (`expires_at`),
+    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户密钥表';
+
+-- 隐私设置表
+CREATE TABLE IF NOT EXISTS `privacy_settings` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '隐私设置ID',
+    `user_id` BIGINT NOT NULL COMMENT '用户ID',
+    `setting_key` VARCHAR(50) NOT NULL COMMENT '设置键',
+    `setting_value` VARCHAR(20) NOT NULL COMMENT '设置值',
+    `description` VARCHAR(255) DEFAULT NULL COMMENT '设置描述',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    UNIQUE KEY `uk_user_setting` (`user_id`, `setting_key`),
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_setting_key` (`setting_key`),
+    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='隐私设置表';
+
+-- 骚扰报告表
+CREATE TABLE IF NOT EXISTS `harassment_reports` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '报告ID',
+    `reporter_id` BIGINT NOT NULL COMMENT '举报人 ID',
+    `reported_user_id` BIGINT NOT NULL COMMENT '被举报用户ID',
+    `report_type` TINYINT NOT NULL COMMENT '报告类型：1-骚扰消息，2-恶意添加，3-垃圾信息，4-其他',
+    `content_type` TINYINT DEFAULT NULL COMMENT '内容类型：1-消息，2-朋友圈，3-贴吧帖子',
+    `content_id` BIGINT DEFAULT NULL COMMENT '内容ID',
+    `description` TEXT DEFAULT NULL COMMENT '报告描述',
+    `evidence_urls` JSON DEFAULT NULL COMMENT '证据截图（JSON数组）',
+    `status` TINYINT DEFAULT 0 COMMENT '处理状态：0-待处理，1-处理中，2-已处理，3-驳回',
+    `admin_id` BIGINT DEFAULT NULL COMMENT '处理管理员ID',
+    `admin_note` TEXT DEFAULT NULL COMMENT '管理员备注',
+    `processed_at` DATETIME DEFAULT NULL COMMENT '处理时间',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX `idx_reporter_id` (`reporter_id`),
+    INDEX `idx_reported_user_id` (`reported_user_id`),
+    INDEX `idx_report_type` (`report_type`),
+    INDEX `idx_status` (`status`),
+    INDEX `idx_created_at` (`created_at`),
+    FOREIGN KEY (`reporter_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`reported_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='骚扰报告表';
+
+-- 用户黑名单表
+CREATE TABLE IF NOT EXISTS `user_blacklist` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '黑名单ID',
+    `user_id` BIGINT NOT NULL COMMENT '用户ID',
+    `blocked_user_id` BIGINT NOT NULL COMMENT '被拉黑用户ID',
+    `reason` VARCHAR(255) DEFAULT NULL COMMENT '拉黑原因',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    UNIQUE KEY `uk_user_blocked` (`user_id`, `blocked_user_id`),
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_blocked_user_id` (`blocked_user_id`),
+    INDEX `idx_created_at` (`created_at`),
+    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`blocked_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户黑名单表';
+
+-- 安全日志表
+CREATE TABLE IF NOT EXISTS `security_logs` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '日志ID',
+    `user_id` BIGINT DEFAULT NULL COMMENT '用户ID',
+    `action_type` VARCHAR(50) NOT NULL COMMENT '操作类型',
+    `ip_address` VARCHAR(45) DEFAULT NULL COMMENT 'IP地址',
+    `user_agent` TEXT DEFAULT NULL COMMENT '用户代理',
+    `location` VARCHAR(255) DEFAULT NULL COMMENT '地理位置',
+    `device_info` JSON DEFAULT NULL COMMENT '设备信息',
+    `result` TINYINT NOT NULL COMMENT '结果：0-失败，1-成功',
+    `risk_level` TINYINT DEFAULT 0 COMMENT '风险等级：0-低，1-中，2-高',
+    `description` TEXT DEFAULT NULL COMMENT '描述',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_action_type` (`action_type`),
+    INDEX `idx_ip_address` (`ip_address`),
+    INDEX `idx_result` (`result`),
+    INDEX `idx_risk_level` (`risk_level`),
+    INDEX `idx_created_at` (`created_at`),
+    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='安全日志表';
+
+-- 插入初始等级数据
+INSERT INTO `user_levels` (`level`, `level_name`, `min_exp`, `max_exp`, `icon_url`, `privileges`) VALUES
+(1, '新手', 0, 99, '/icons/level1.png', '{"daily_checkin_bonus": 1.0, "message_limit": 100}'),
+(2, '初级', 100, 299, '/icons/level2.png', '{"daily_checkin_bonus": 1.2, "message_limit": 200}'),
+(3, '中级', 300, 699, '/icons/level3.png', '{"daily_checkin_bonus": 1.5, "message_limit": 500}'),
+(4, '高级', 700, 1499, '/icons/level4.png', '{"daily_checkin_bonus": 2.0, "message_limit": 1000}'),
+(5, '专家', 1500, 2999, '/icons/level5.png', '{"daily_checkin_bonus": 2.5, "message_limit": 2000}'),
+(6, '大师', 3000, 5999, '/icons/level6.png', '{"daily_checkin_bonus": 3.0, "message_limit": 5000}'),
+(7, '宗师', 6000, 11999, '/icons/level7.png', '{"daily_checkin_bonus": 4.0, "message_limit": 10000}'),
+(8, '传说', 12000, NULL, '/icons/level8.png', '{"daily_checkin_bonus": 5.0, "message_limit": -1}');
+
+-- 插入初始成就数据
+INSERT INTO `social_achievements` (`achievement_code`, `achievement_name`, `achievement_description`, `achievement_icon`, `category`, `type`, `target_value`, `points_reward`, `exp_reward`, `badge_reward`, `is_active`, `sort_order`) VALUES
+-- 登录成就
+('LOGIN_FIRST', '初次登录', '欢迎来到我们的平台！', '/icons/first_login.png', '登录', 1, 1, 50, 10, 'welcome_badge', 1, 1),
+('LOGIN_CONTINUOUS_7', '连续登录7天', '连续登录7天，坚持就是胜利！', '/icons/login_7.png', '登录', 1, 7, 100, 50, 'persistence_badge', 1, 2),
+('LOGIN_CONTINUOUS_30', '连续登录30天', '月度登录达人！', '/icons/login_30.png', '登录', 1, 30, 500, 200, 'monthly_badge', 1, 3),
+
+-- 社交成就
+('FRIENDS_FIRST', '第一个好友', '添加了第一个好友，社交之旅开始！', '/icons/first_friend.png', '社交', 1, 1, 30, 20, 'social_badge', 1, 10),
+('FRIENDS_10', '好友满十', '好友数量达刄10人', '/icons/friends_10.png', '社交', 1, 10, 100, 50, 'popular_badge', 1, 11),
+('FRIENDS_50', '社交达人', '好友数量达刄50人', '/icons/friends_50.png', '社交', 1, 50, 300, 150, 'social_master_badge', 1, 12),
+
+-- 消息成就
+('MESSAGE_FIRST', '第一条消息', '发送了第一条消息', '/icons/first_message.png', '消息', 1, 1, 20, 10, 'messenger_badge', 1, 20),
+('MESSAGE_100', '消息小能手', '发送了100条消息', '/icons/message_100.png', '消息', 1, 100, 50, 30, 'active_badge', 1, 21),
+('MESSAGE_1000', '消息大使', '发送了1000条消息', '/icons/message_1000.png', '消息', 1, 1000, 200, 100, 'communication_badge', 1, 22),
+
+-- 签到成就
+('CHECKIN_FIRST', '首次签到', '完成了第一次签到', '/icons/first_checkin.png', '签到', 1, 1, 20, 10, 'routine_badge', 1, 30),
+('CHECKIN_CONTINUOUS_7', '七日签到', '连续签到7天', '/icons/checkin_7.png', '签到', 1, 7, 100, 50, 'dedication_badge', 1, 31),
+('CHECKIN_CONTINUOUS_30', '月度签到', '连续签到30天', '/icons/checkin_30.png', '签到', 1, 30, 500, 200, 'commitment_badge', 1, 32),
+
+-- 内容成就
+('MOMENT_FIRST', '首次动态', '发布了第一条朋友圈动态', '/icons/first_moment.png', '内容', 1, 1, 30, 20, 'creator_badge', 1, 40),
+('MOMENT_LIKED_100', '受欢迎者', '朋友圈获得100个赞', '/icons/liked_100.png', '内容', 1, 100, 200, 100, 'popular_creator_badge', 1, 41),
+('FORUM_POST_10', '贴吧活跃者', '发布了10个贴吧帖子', '/icons/forum_active.png', '内容', 1, 10, 150, 80, 'forum_badge', 1, 42);
+
+-- 插入默认隐私设置
+INSERT INTO `privacy_settings` (`user_id`, `setting_key`, `setting_value`, `description`) 
+SELECT u.id, 'PROFILE_VISIBILITY', 'FRIENDS', '资料可见性' FROM `users` u WHERE NOT EXISTS (SELECT 1 FROM `privacy_settings` ps WHERE ps.user_id = u.id AND ps.setting_key = 'PROFILE_VISIBILITY');
+
+INSERT INTO `privacy_settings` (`user_id`, `setting_key`, `setting_value`, `description`) 
+SELECT u.id, 'LOCATION_SHARING', 'FRIENDS', '位置共享' FROM `users` u WHERE NOT EXISTS (SELECT 1 FROM `privacy_settings` ps WHERE ps.user_id = u.id AND ps.setting_key = 'LOCATION_SHARING');
+
+INSERT INTO `privacy_settings` (`user_id`, `setting_key`, `setting_value`, `description`) 
+SELECT u.id, 'ONLINE_STATUS', 'FRIENDS', '在线状态显示' FROM `users` u WHERE NOT EXISTS (SELECT 1 FROM `privacy_settings` ps WHERE ps.user_id = u.id AND ps.setting_key = 'ONLINE_STATUS');
+
+INSERT INTO `privacy_settings` (`user_id`, `setting_key`, `setting_value`, `description`) 
+SELECT u.id, 'FRIEND_REQUEST', 'EVERYONE', '好友请求接收' FROM `users` u WHERE NOT EXISTS (SELECT 1 FROM `privacy_settings` ps WHERE ps.user_id = u.id AND ps.setting_key = 'FRIEND_REQUEST');
+
+INSERT INTO `privacy_settings` (`user_id`, `setting_key`, `setting_value`, `description`) 
+SELECT u.id, 'MESSAGE_FROM_STRANGER', 'DISABLED', '陌生人消息' FROM `users` u WHERE NOT EXISTS (SELECT 1 FROM `privacy_settings` ps WHERE ps.user_id = u.id AND ps.setting_key = 'MESSAGE_FROM_STRANGER');
+
+-- 为所有现有用户初始化经验和成就
+INSERT INTO `user_experience` (`user_id`, `current_level`, `current_exp`, `total_exp`) 
+SELECT u.id, 1, 0, 0 FROM `users` u WHERE NOT EXISTS (SELECT 1 FROM `user_experience` ue WHERE ue.user_id = u.id);
+
+INSERT INTO `user_achievements` (`user_id`, `achievement_id`, `current_value`, `target_value`, `is_completed`) 
+SELECT u.id, sa.id, 0, sa.target_value, 0 
+FROM `users` u 
+CROSS JOIN `social_achievements` sa 
+WHERE sa.is_active = 1 
+AND NOT EXISTS (SELECT 1 FROM `user_achievements` ua WHERE ua.user_id = u.id AND ua.achievement_id = sa.id);
