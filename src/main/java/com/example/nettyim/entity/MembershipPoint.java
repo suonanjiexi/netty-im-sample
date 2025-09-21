@@ -68,4 +68,77 @@ public class MembershipPoint extends BaseEntity {
     public Boolean isExpired() {
         return expireTime != null && expireTime.isBefore(LocalDateTime.now());
     }
+    
+    // Getter and Setter methods
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
+    public Integer getPointsType() {
+        return pointsType;
+    }
+
+    public void setPointsType(Integer pointsType) {
+        this.pointsType = pointsType;
+    }
+
+    public Integer getPointsAmount() {
+        return pointsAmount;
+    }
+
+    public void setPointsAmount(Integer pointsAmount) {
+        this.pointsAmount = pointsAmount;
+    }
+
+    public String getSourceType() {
+        return sourceType;
+    }
+
+    public void setSourceType(String sourceType) {
+        this.sourceType = sourceType;
+    }
+
+    public Long getSourceId() {
+        return sourceId;
+    }
+
+    public void setSourceId(Long sourceId) {
+        this.sourceId = sourceId;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public Integer getBalanceAfter() {
+        return balanceAfter;
+    }
+
+    public void setBalanceAfter(Integer balanceAfter) {
+        this.balanceAfter = balanceAfter;
+    }
+
+    public LocalDateTime getExpireTime() {
+        return expireTime;
+    }
+
+    public void setExpireTime(LocalDateTime expireTime) {
+        this.expireTime = expireTime;
+    }
 }

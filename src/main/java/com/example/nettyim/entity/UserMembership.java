@@ -125,4 +125,125 @@ public class UserMembership extends BaseEntity {
         
         return trialEndTime.isBefore(LocalDateTime.now());
     }
+    
+    // Getter and Setter methods
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
+    public Long getLevelId() {
+        return levelId;
+    }
+
+    public void setLevelId(Long levelId) {
+        this.levelId = levelId;
+    }
+
+    public Integer getStatus() {
+        return status;
+    }
+
+    public void setStatus(Integer status) {
+        this.status = status;
+    }
+
+    public LocalDateTime getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(LocalDateTime startTime) {
+        this.startTime = startTime;
+    }
+
+    public LocalDateTime getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(LocalDateTime endTime) {
+        this.endTime = endTime;
+    }
+
+    public Boolean getIsTrial() {
+        return isTrial;
+    }
+
+    public void setIsTrial(Boolean isTrial) {
+        this.isTrial = isTrial;
+    }
+
+    public LocalDateTime getTrialEndTime() {
+        return trialEndTime;
+    }
+
+    public void setTrialEndTime(LocalDateTime trialEndTime) {
+        this.trialEndTime = trialEndTime;
+    }
+
+    public Boolean getAutoRenew() {
+        return autoRenew;
+    }
+
+    public void setAutoRenew(Boolean autoRenew) {
+        this.autoRenew = autoRenew;
+    }
+
+    public Integer getRenewType() {
+        return renewType;
+    }
+
+    public void setRenewType(Integer renewType) {
+        this.renewType = renewType;
+    }
+
+    public BigDecimal getTotalPaid() {
+        return totalPaid;
+    }
+
+    public void setTotalPaid(BigDecimal totalPaid) {
+        this.totalPaid = totalPaid;
+    }
+
+    public Integer getPointsEarned() {
+        return pointsEarned;
+    }
+
+    public void setPointsEarned(Integer pointsEarned) {
+        this.pointsEarned = pointsEarned;
+    }
+
+    public Integer getPointsUsed() {
+        return pointsUsed;
+    }
+
+    public void setPointsUsed(Integer pointsUsed) {
+        this.pointsUsed = pointsUsed;
+    }
+
+    public String getReferralCode() {
+        return referralCode;
+    }
+
+    public void setReferralCode(String referralCode) {
+        this.referralCode = referralCode;
+    }
+
+    public Long getReferrerUserId() {
+        return referrerUserId;
+    }
+
+    public void setReferrerUserId(Long referrerUserId) {
+        this.referrerUserId = referrerUserId;
+    }
 }

@@ -141,4 +141,205 @@ public class MembershipLevel extends BaseEntity {
      * 是否激活
      */
     private Boolean isActive;
+    
+    // Getter and Setter methods
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getLevelName() {
+        return levelName;
+    }
+
+    public void setLevelName(String levelName) {
+        this.levelName = levelName;
+    }
+
+    public String getLevelCode() {
+        return levelCode;
+    }
+
+    public void setLevelCode(String levelCode) {
+        this.levelCode = levelCode;
+    }
+
+    public Integer getLevelOrder() {
+        return levelOrder;
+    }
+
+    public void setLevelOrder(Integer levelOrder) {
+        this.levelOrder = levelOrder;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getIconUrl() {
+        return iconUrl;
+    }
+
+    public void setIconUrl(String iconUrl) {
+        this.iconUrl = iconUrl;
+    }
+
+    public String getBackgroundColor() {
+        return backgroundColor;
+    }
+
+    public void setBackgroundColor(String backgroundColor) {
+        this.backgroundColor = backgroundColor;
+    }
+
+    public String getTextColor() {
+        return textColor;
+    }
+
+    public void setTextColor(String textColor) {
+        this.textColor = textColor;
+    }
+
+    public BigDecimal getPriceMonthly() {
+        return priceMonthly;
+    }
+
+    public void setPriceMonthly(BigDecimal priceMonthly) {
+        this.priceMonthly = priceMonthly;
+    }
+
+    public BigDecimal getPriceYearly() {
+        return priceYearly;
+    }
+
+    public void setPriceYearly(BigDecimal priceYearly) {
+        this.priceYearly = priceYearly;
+    }
+
+    public Integer getTrialDays() {
+        return trialDays;
+    }
+
+    public void setTrialDays(Integer trialDays) {
+        this.trialDays = trialDays;
+    }
+
+    public Integer getMaxGroups() {
+        return maxGroups;
+    }
+
+    public void setMaxGroups(Integer maxGroups) {
+        this.maxGroups = maxGroups;
+    }
+
+    public Integer getMaxFriends() {
+        return maxFriends;
+    }
+
+    public void setMaxFriends(Integer maxFriends) {
+        this.maxFriends = maxFriends;
+    }
+
+    public Long getMaxFileSize() {
+        return maxFileSize;
+    }
+
+    public void setMaxFileSize(Long maxFileSize) {
+        this.maxFileSize = maxFileSize;
+    }
+
+    public Long getMaxStorageSize() {
+        return maxStorageSize;
+    }
+
+    public void setMaxStorageSize(Long maxStorageSize) {
+        this.maxStorageSize = maxStorageSize;
+    }
+
+    public Boolean getCanCreateGroup() {
+        return canCreateGroup;
+    }
+
+    public void setCanCreateGroup(Boolean canCreateGroup) {
+        this.canCreateGroup = canCreateGroup;
+    }
+
+    public Boolean getCanUploadFile() {
+        return canUploadFile;
+    }
+
+    public void setCanUploadFile(Boolean canUploadFile) {
+        this.canUploadFile = canUploadFile;
+    }
+
+    public Boolean getCanVideoCall() {
+        return canVideoCall;
+    }
+
+    public void setCanVideoCall(Boolean canVideoCall) {
+        this.canVideoCall = canVideoCall;
+    }
+
+    public Boolean getCanVoiceCall() {
+        return canVoiceCall;
+    }
+
+    public void setCanVoiceCall(Boolean canVoiceCall) {
+        this.canVoiceCall = canVoiceCall;
+    }
+
+    public Boolean getCanLiveStream() {
+        return canLiveStream;
+    }
+
+    public void setCanLiveStream(Boolean canLiveStream) {
+        this.canLiveStream = canLiveStream;
+    }
+
+    public Boolean getAdFree() {
+        return adFree;
+    }
+
+    public void setAdFree(Boolean adFree) {
+        this.adFree = adFree;
+    }
+
+    public Boolean getPrioritySupport() {
+        return prioritySupport;
+    }
+
+    public void setPrioritySupport(Boolean prioritySupport) {
+        this.prioritySupport = prioritySupport;
+    }
+
+    public Boolean getCustomTheme() {
+        return customTheme;
+    }
+
+    public void setCustomTheme(Boolean customTheme) {
+        this.customTheme = customTheme;
+    }
+
+    public Boolean getSpecialBadge() {
+        return specialBadge;
+    }
+
+    public void setSpecialBadge(Boolean specialBadge) {
+        this.specialBadge = specialBadge;
+    }
+
+    public Boolean getIsActive() {
+        return isActive;
+    }
+
+    public void setIsActive(Boolean isActive) {
+        this.isActive = isActive;
+    }
 }

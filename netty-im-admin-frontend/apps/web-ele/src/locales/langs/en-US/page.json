@@ -1,0 +1,25 @@
+{
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "codeLogin": "Code Login",
+    "qrcodeLogin": "Qr Code Login",
+    "forgetPassword": "Forget Password"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "analytics": "Analytics",
+    "workspace": "Workspace"
+  },
+  "admin": {
+    "title": "Admin Management",
+    "list": "Admin List",
+    "users": "User Management",
+    "contentAudit": "Content Audit",
+    "sensitiveWords": "Sensitive Words",
+    "memberships": "Membership Management",
+    "payments": "Payment Management",
+    "statistics": "Data Statistics",
+    "logs": "System Logs"
+  }
+}
